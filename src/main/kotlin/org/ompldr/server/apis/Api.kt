@@ -56,7 +56,6 @@ import org.ompldr.server.models.Response
 import org.ompldr.server.models.toQuoteRequest
 import org.ompldr.server.utils.calculatePriceInSatoshis
 import org.ompldr.server.utils.calculatePriceInUSD
-import org.ompldr.server.utils.deleteTempBlob
 import org.ompldr.server.utils.downloadFromBlobStorage
 import org.ompldr.server.utils.downloadFromBlobStorageEncrypted
 import org.ompldr.server.utils.finalizeStorage
