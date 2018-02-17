@@ -179,10 +179,11 @@ object LndRpcClient {
   }
 
   fun subscribeToInvoices() {
-    val subscription = stub.subscribeInvoices(
-        lnrpc.Rpc.InvoiceSubscription.newBuilder().build()
-    )
     while (true) {
+      logger.info("Starting new invoice subscription")
+      val subscription = stub.subscribeInvoices(
+          lnrpc.Rpc.InvoiceSubscription.newBuilder().build()
+      )
       try {
         subscription.forEach {
           // invoice was settled, update DB
@@ -195,6 +196,7 @@ object LndRpcClient {
   }
 
   fun checkIfInvoicesUnpaid() {
+    logger.info("Checking for unpaid invoices")
     val unpaidFileIds = getUnpaidInvoiceFileIds()
     unpaidFileIds.forEach { fileId ->
       val rHash = dbExecRead {
@@ -205,6 +207,9 @@ object LndRpcClient {
         it[InvoiceModel.rhash]
       }.firstOrNull()
       if (rHash != null) {
+        logger.info {
+          "Found unpaid invoice with rhash=$rHash"
+        }
         val response = stub.lookupInvoice(
             lnrpc.Rpc.PaymentHash.newBuilder()
                 .setRHash(ByteString.copyFrom(Hex.decodeHex(rHash)))
