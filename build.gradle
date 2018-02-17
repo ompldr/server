@@ -1,0 +1,150 @@
+group 'org.ompldr'
+version '1.0.0'
+
+task wrapper(type: Wrapper) {
+  gradleVersion = '4.5.1'
+  distributionUrl = "https://services.gradle.org/distributions/gradle-$gradleVersion-all.zip"
+}
+
+buildscript {
+  ext {
+    kotlin_version = '1.2.21'
+    ktor_version = '0.9.1'
+    shadow_version = '2.0.2'
+    spek_version = '1.1.5'
+  }
+
+
+  repositories {
+    maven { url "https://maven-central.storage-download.googleapis.com/repos/central/data/" }
+    mavenCentral()
+    maven {
+      url "https://plugins.gradle.org/m2/"
+    }
+  }
+  dependencies {
+    classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+    classpath "com.github.jengelman.gradle.plugins:shadow:$shadow_version"
+    classpath 'org.junit.platform:junit-platform-gradle-plugin:1.0.0'
+    classpath 'com.google.protobuf:protobuf-gradle-plugin:0.8.4'
+    classpath 'gradle.plugin.org.jmailen.gradle:kotlinter-gradle:1.7.0'
+  }
+}
+
+apply plugin: 'org.junit.platform.gradle.plugin'
+apply plugin: 'java'
+apply plugin: 'com.google.protobuf'
+apply plugin: 'kotlin'
+apply plugin: 'application'
+apply plugin: 'idea'
+apply plugin: 'org.jmailen.kotlinter'
+
+kotlinter {
+  ignoreFailures = false
+  indentSize = 2
+  continuationIndentSize = 4
+  reporters = ['checkstyle', 'plain']
+}
+
+junitPlatform {
+  filters {
+    engines {
+      include 'spek'
+    }
+  }
+}
+
+mainClassName = "io.ktor.server.netty.DevelopmentEngine"
+
+// Initialization order with shadow 2.0.1 and Gradle 4.3 is weird.
+// See https://github.com/johnrengelman/shadow/issues/336#issuecomment-355402508
+apply plugin: 'com.github.johnrengelman.shadow'
+
+sourceCompatibility = 1.8
+
+compileKotlin {
+  kotlinOptions.jvmTarget = "1.8"
+}
+
+compileTestKotlin {
+  kotlinOptions.jvmTarget = "1.8"
+}
+
+kotlin {
+  experimental {
+    coroutines "enable"
+  }
+}
+
+shadowJar {
+  baseName = 'ompldr-server'
+  classifier = null
+  version = null
+  relocate 'com.github.debop', 'shadow.com.github.debop'
+}
+
+repositories {
+  maven { url "https://maven-central.storage-download.googleapis.com/repos/central/data/" }
+  mavenCentral()
+  jcenter()
+  maven { url "http://dl.bintray.com/kotlin/ktor" }
+  maven { url "https://dl.bintray.com/kotlin/kotlinx" }
+  maven { url  "https://dl.bintray.com/kotlin/exposed" }
+  maven { url "http://dl.bintray.com/jetbrains/spek" }
+}
+
+dependencies {
+  compile "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
+  compile "io.ktor:ktor-server-netty:$ktor_version"
+  compile "io.ktor:ktor-metrics:$ktor_version"
+  compile "io.ktor:ktor-locations:$ktor_version"
+  compile "io.ktor:ktor-jackson:$ktor_version"
+  compile "io.ktor:ktor-client-core:$ktor_version"
+  compile "io.ktor:ktor-client-apache:$ktor_version"
+  compile "ch.qos.logback:logback-classic:1.2.1"
+  compile 'io.github.microutils:kotlin-logging:1.4.9'
+  compile 'com.github.debop:koda-time:1.2.1'
+  compile 'org.jetbrains.exposed:exposed:0.9.1'
+  compile 'org.postgresql:postgresql:42.2.1'
+  compile 'mysql:mysql-connector-java:5.1.6'
+  compile 'com.h2database:h2:1.4.196'
+  compile 'com.google.cloud:google-cloud-storage:1.14.0'
+  compile 'com.google.cloud.sql:mysql-socket-factory:1.0.5'
+  compile 'org.knowm.xchange:xchange-coinmarketcap:4.3.2'
+  compile 'io.grpc:grpc-netty:1.9.0'
+  compile 'io.grpc:grpc-protobuf:1.9.0'
+  compile 'io.grpc:grpc-stub:1.9.0'
+  compile 'com.google.protobuf:protobuf-java:3.5.1'
+  compile 'io.netty:netty-tcnative-boringssl-static:2.0.7.Final'
+  compile 'com.github.nitram509:jmacaroons:0.3.1'
+  compile 'commons-codec:commons-codec:1.11'
+  compile 'org.apache.commons:commons-dbcp2:2.2.0'
+
+  testCompile "org.jetbrains.kotlin:kotlin-test:$kotlin_version"
+  testCompile "org.jetbrains.kotlin:kotlin-test-junit:$kotlin_version"
+
+  testCompile "org.jetbrains.spek:spek-api:$spek_version"
+  testRuntime "org.jetbrains.spek:spek-junit-platform-engine:$spek_version"
+}
+
+idea {
+  module {
+    generatedSourceDirs += file("${buildDir}/generated/source/proto")
+  }
+}
+
+protobuf {
+  protoc {
+    artifact = 'com.google.protobuf:protoc:3.5.1-1'
+  }
+  plugins {
+    grpc {
+      artifact = 'io.grpc:protoc-gen-grpc-java:1.9.0'
+    }
+  }
+  generateProtoTasks {
+    ofSourceSet('main')*.plugins {
+      grpc { }
+    }
+  }
+}

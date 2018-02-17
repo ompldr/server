@@ -1,0 +1,311 @@
+swagger: '2.0'
+info:
+  description: |
+    ### Take control of your data with Omploader.
+
+    **Omploader** is a privacy-first file hosting service that does not
+    compromise on **security, privacy, or speed**. With Omploader, you pay
+    upfront using Bitcoin, and your file is automatically distributed across
+    a global CDN. You decide how much you want to pay based on usage, and
+    you can refresh at any time.
+
+    Data is stored using super secure encryption methods (AES-128 on the server,
+    Salsa20 on the client). Furthermore, Omploader does not retain any logs,
+    identifying information, or private keys for file data to respect your
+    privacy.
+
+    ### About the API
+
+    The Omploader API is available for public use, and operates under an upfront
+    payment model. Generally speaking, there are no limitations on use, however
+    we retain the right to remove content which may be in violation of the
+    underlying host policies. All API endpoints are rate limited to 1 request
+    per second per IP address.
+  version: 2.0.0
+  title: Omploader
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+host: api.ompldr.org
+basePath: /v2
+schemes:
+- https
+paths:
+  /upload:
+    post:
+      consumes:
+        - multipart/form-data
+      parameters:
+        - in: formData
+          name: file
+          type: file
+          description: The file to upload.
+          required: true
+        - in: formData
+          name: downloadCount
+          type: integer
+          description: Maximum number of downloads.
+          default: 100
+        - in: formData
+          name: expiresAfterSeconds
+          type: number
+          description: >
+            The number of seconds after which this file expires. Defaults to
+            24h after upload completes.
+      summary: Upload file
+      description: >
+        Upload a new file. After the upload completes, the invoice must be paid
+        within one hour, before the expiry date. If the invoice isn't paid in
+        time, the file is deleted. The file will be available once the invoice
+        is paid, and until `downloadCount` downloads are used, or
+        `expiresAfterSeconds` has passed. Use the `/refresh` endpoint to extend
+        or increase the number of downloads for a file.
+      operationId: uploadFile
+      produces:
+      - application/json
+      responses:
+        200:
+          description: Success
+          schema:
+            $ref: '#/definitions/Invoice'
+        400:
+          description: Invalid input
+          schema:
+            $ref: '#/definitions/Response'
+  /quote:
+    post:
+      consumes:
+        - application/json
+      parameters:
+        - in: body
+          name: body
+          description: >
+            Get a storage price quote. A quote is valid for up to 5 minutes
+            after being requested.
+          required: true
+          schema:
+            $ref: "#/definitions/QuoteRequest"
+      summary: Get price quote
+      description: >
+        Get a storage price quote. You specify the number of bytes to store,
+        the number of downloads, and the number of seconds after which the
+        file expires. Quote price is returned in Satoshis.
+      operationId: getQuote
+      produces:
+      - application/json
+      responses:
+        200:
+          description: Success
+          schema:
+            $ref: '#/definitions/Quote'
+        400:
+          description: Invalid input
+          schema:
+            $ref: '#/definitions/Response'
+  /refresh/{id}:
+    put:
+      summary: Refresh file
+      description: Refresh a file so it doesn't disappear.
+      operationId: refreshFile
+      parameters:
+        - in: path
+          name: id
+          type: string
+          description: ID of file to update
+          required: true
+        - in: body
+          name: body
+          description: >
+            Refreshing a file allows you to extend the storage duration of
+            the specified object.
+          required: true
+          schema:
+            $ref: "#/definitions/RefreshRequest"
+      produces:
+      - application/json
+      responses:
+        200:
+          description: Success
+          schema:
+            $ref: '#/definitions/Invoice'
+        404:
+          description: Not found
+        400:
+          description: Invalid input
+          schema:
+            $ref: '#/definitions/Response'
+  /info/{id}:
+    get:
+      summary: Get file info
+      description: Fetch the current file info.
+      operationId: getInfo
+      parameters:
+        - in: path
+          name: id
+          type: string
+          description: ID of file to update
+          required: true
+      produces:
+      - application/json
+      responses:
+        200:
+          description: Success
+          schema:
+            $ref: '#/definitions/FileInfo'
+        404:
+          description: Not found
+        400:
+          description: Invalid input
+          schema:
+            $ref: '#/definitions/Response'
+  /get/{id}/{privateKey}:
+    get:
+      summary: Get file
+      description: Fetch, decrypt, and return file contents
+      operationId: getFile
+      parameters:
+        - in: path
+          name: id
+          type: string
+          description: ID of file to fetch
+          required: true
+        - in: path
+          name: privateKey
+          type: string
+          description: >
+            The base 64 encoded private key to decrypt file on server side.
+          required: true
+      produces:
+      - application/octet-stream
+      responses:
+        200:
+          description: Success
+        404:
+          description: Not found
+        400:
+          description: Invalid input
+          schema:
+            $ref: '#/definitions/Response'
+  /get/{id}:
+    get:
+      summary: Get encrypted file data
+      description: >
+       Fetch and return encrypted file contents. Data is encrypted with
+       AES-128.
+      operationId: getEncryptedFile
+      parameters:
+        - in: path
+          name: id
+          type: string
+          description: ID of file to fetch
+          required: true
+      produces:
+      - application/octet-stream
+      responses:
+        200:
+          description: Success
+        404:
+          description: Not found
+        400:
+          description: Invalid input
+          schema:
+            $ref: '#/definitions/Response'
+  /ping:
+    get:
+      summary: Health check
+      description: >
+        API health check endpoint, which returns 200 when everything's a o.k.
+      produces:
+      - text/plain
+      responses:
+        200:
+          description: OK
+definitions:
+  FileInfo:
+    type: object
+    properties:
+      fileId:
+        type: string
+        description: Unique identifier for file object.
+      length:
+        type: integer
+        description: Length in bytes of the file.
+      invoicePaid:
+        type: boolean
+        description: True if the invoice has been paid.
+      contentType:
+        type: string
+        description: Content type of this file.
+      downloadsRemaining:
+        type: integer
+        description: >
+          Number of downloads remaining. Once this number reaches 0, the file
+          will be deleted.
+      expiresAt:
+        type: string
+        format: date-time
+        description: >
+          The time at which this file will expire. Once this date is reached,
+          the file will be deleted.
+  Invoice:
+    type: object
+    properties:
+      fileInfo:
+        $ref: '#/definitions/FileInfo'
+      invoiceExpiresAt:
+        type: string
+        format: date-time
+        description: >
+          The date at which this invoice expires, in UTC. The file will also
+          be deleted if there is no remaining time (if, for example, this
+          invoice was generated by a refresh request).
+      bolt11:
+        type: string
+        description: >
+          The bech32 Bitcoin invoice for this file. See
+          https://github.com/lightningnetwork/lightning-rfc/blob/master/11-payment-encoding.md
+          for details.
+      privateKey:
+        type: string
+        description: >
+          The base64 encoded AES-128 private key for this file's server side
+          encryption. This key is not stored anywhere on Omploader's servers.
+          Clients are responsible for managing the private keys.
+  RefreshRequest:
+    type: object
+    properties:
+      downloadCount:
+        type: integer
+        description: Additional number of downloads.
+      expiresAfterSeconds:
+        type: integer
+        description: >
+          Additional number of seconds after which this file will expire.
+  QuoteRequest:
+    type: object
+    properties:
+      downloadCount:
+        type: integer
+        description: Number of downloads.
+      expiresAfterSeconds:
+        type: integer
+        description: Number of seconds after which this file expires.
+      length:
+        type: integer
+        description: Size in bytes of the file to be stored.
+  Quote:
+    type: object
+    properties:
+      quoteRequest:
+        $ref: '#/definitions/QuoteRequest'
+      satoshis:
+        type: integer
+        description: Price in Satoshis for this request.
+      priceUsd:
+        type: number
+        description: Price in USD for this request.
+  Response:
+    type: object
+    properties:
+      message:
+        type: string

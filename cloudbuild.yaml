@@ -1,0 +1,70 @@
+steps:
+- name: 'gcr.io/cloud-builders/docker'
+  args: ["build", "-t", "us.gcr.io/ompldr/server:$REVISION_ID", "."]
+  dir: 'server'
+- name: 'gcr.io/cloud-builders/docker'
+  args: ["tag", "us.gcr.io/ompldr/server:$REVISION_ID", "us.gcr.io/ompldr/server:latest"]
+- name: 'gcr.io/cloud-builders/docker'
+  args: ["push", "us.gcr.io/ompldr/server:$REVISION_ID"]
+- name: 'gcr.io/cloud-builders/docker'
+  args: ["push", "us.gcr.io/ompldr/server:latest"]
+- name: 'gcr.io/cloud-builders/kubectl'
+  args:
+  - set
+  - image
+  - deployment
+  - api-server
+  - server=us.gcr.io/ompldr/server:$REVISION_ID
+  env:
+  - 'CLOUDSDK_COMPUTE_ZONE=us-east4-a'
+  - 'CLOUDSDK_CONTAINER_CLUSTER=ompldr-us-east4'
+- name: 'gcr.io/cloud-builders/kubectl'
+  args:
+  - set
+  - image
+  - deployment
+  - periodic-service
+  - server=us.gcr.io/ompldr/server:$REVISION_ID
+  env:
+  - 'CLOUDSDK_COMPUTE_ZONE=us-east4-a'
+  - 'CLOUDSDK_CONTAINER_CLUSTER=ompldr-us-east4'
+- name: 'gcr.io/cloud-builders/kubectl'
+  args:
+  - set
+  - image
+  - deployment
+  - invoice-service
+  - server=us.gcr.io/ompldr/server:$REVISION_ID
+  env:
+  - 'CLOUDSDK_COMPUTE_ZONE=us-east4-a'
+  - 'CLOUDSDK_CONTAINER_CLUSTER=ompldr-us-east4'
+- name: 'gcr.io/cloud-builders/kubectl'
+  args:
+  - set
+  - image
+  - deployment
+  - api-server
+  - server=us.gcr.io/ompldr/server:$REVISION_ID
+  env:
+  - 'CLOUDSDK_COMPUTE_ZONE=us-west1-a'
+  - 'CLOUDSDK_CONTAINER_CLUSTER=ompldr-us-west1'
+- name: 'gcr.io/cloud-builders/kubectl'
+  args:
+  - set
+  - image
+  - deployment
+  - periodic-service
+  - server=us.gcr.io/ompldr/server:$REVISION_ID
+  env:
+  - 'CLOUDSDK_COMPUTE_ZONE=us-west1-a'
+  - 'CLOUDSDK_CONTAINER_CLUSTER=ompldr-us-west1'
+- name: 'gcr.io/cloud-builders/kubectl'
+  args:
+  - set
+  - image
+  - deployment
+  - invoice-service
+  - server=us.gcr.io/ompldr/server:$REVISION_ID
+  env:
+  - 'CLOUDSDK_COMPUTE_ZONE=us-west1-a'
+  - 'CLOUDSDK_CONTAINER_CLUSTER=ompldr-us-west1'
