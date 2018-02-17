@@ -187,6 +187,9 @@ object LndRpcClient {
       try {
         subscription.forEach {
           // invoice was settled, update DB
+          logger.info {
+            "invoice received: $it"
+          }
           markInvoicePaid(it)
         }
       } catch (e: Exception) {

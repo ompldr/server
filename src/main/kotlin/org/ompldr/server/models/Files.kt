@@ -90,6 +90,9 @@ object Files {
   }
 
   fun markFileInvoicePaid(fileId: String, rhash: String, paid: Boolean = true): Int {
+    logger.info {
+      "marking invoice for fileId=$fileId paid=$paid with rhash=$rhash"
+    }
     // First case: determine if there was a pending refresh, and if so, mark that as paid and get the downloads + expiry time
     val refreshRequest = dbExecRead {
       RefreshRequestModel.select {
