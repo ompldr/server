@@ -16,6 +16,7 @@
 package org.ompldr.server.models
 
 import com.github.debop.kodatimes.seconds
+import mu.KotlinLogging
 import org.jetbrains.exposed.dao.LongIdTable
 import org.jetbrains.exposed.sql.Query
 import org.jetbrains.exposed.sql.SchemaUtils.create
@@ -40,6 +41,8 @@ import org.ompldr.server.utils.toDateTime
 import org.ompldr.server.utils.toISOFormat
 import java.util.Base64
 import java.util.UUID
+
+private val logger = KotlinLogging.logger {}
 
 object Files {
   private object FilesModel : Table() {
