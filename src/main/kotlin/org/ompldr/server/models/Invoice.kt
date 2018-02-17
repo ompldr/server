@@ -203,7 +203,7 @@ object LndRpcClient {
         InvoiceModel.select {
           InvoiceModel.memo.eq(fileId)
         }
-      }.map {
+      }.mapNotNull {
         it[InvoiceModel.rhash]
       }.firstOrNull()
       if (rHash != null) {
