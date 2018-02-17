@@ -48,6 +48,9 @@ object RestApi {
   }
 
   fun Application.main() {
+    logger.info {
+      "Starting REST API service"
+    }
     initializeDbs()
     install(DefaultHeaders)
     val redirectToHttps = settings.propertyOrNull("ompldr.redirectToHttps")?.getString()?.toBoolean()

@@ -60,6 +60,9 @@ object PeriodicService {
   }
 
   fun Application.main() {
+    logger.info {
+      "Starting invoice service"
+    }
     install(DefaultHeaders)
     install(CallLogging)
     install(Routing) {

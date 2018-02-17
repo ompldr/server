@@ -27,16 +27,22 @@ import io.ktor.response.respondText
 import io.ktor.routing.Routing
 import io.ktor.routing.get
 import kotlinx.coroutines.experimental.launch
+import mu.KotlinLogging
 import org.ompldr.server.models.Db.initializeDbs
 import org.ompldr.server.models.LndRpcClient.checkIfInvoicesUnpaid
 import org.ompldr.server.models.LndRpcClient.subscribeToInvoices
 
 object InvoiceService {
+  private val logger = KotlinLogging.logger {}
+
   object HTTP {
     val client = HttpClient(Apache)
   }
 
   fun Application.main() {
+    logger.info {
+      "Starting invoice service"
+    }
     install(DefaultHeaders)
     install(CallLogging)
     install(Routing) {
