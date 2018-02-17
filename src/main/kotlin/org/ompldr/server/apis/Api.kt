@@ -166,7 +166,7 @@ fun Route.defaultApi() {
       val result = getFileInfo(it.id)
       if (result != null) {
         val (info, _) = result
-        call.response.cacheControl(CacheControl.MaxAge(100))
+        call.response.cacheControl(CacheControl.MaxAge(1))
         call.respond(info)
       } else {
         call.respond(HttpStatusCode.NotFound, Response("Not found ¯\\_(ツ)_/¯"))
