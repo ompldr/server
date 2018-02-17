@@ -269,31 +269,19 @@ fun Route.defaultApi() {
               uuid,
               extension)
 
-          if (fileInfoResult == null) {
-            // DB write failed
-            launch {
-              deleteTempBlob(uuid.toString())
-            }
-            call.respond(
-                HttpStatusCode.InternalServerError,
-                Response("Something went wrong with the database :/"))
-            return@post
-          } else {
+          // DB write succeeded
+          fileInfo = fileInfoResult.first
+          val createdAt = fileInfoResult.second
+          val price = calculatePriceInSatoshis(fileInfo.toQuoteRequest(expiresAfterSeconds))
+          val (invoice, _) = makeInvoice(
+              fileInfo,
+              price,
+              privateKey
+          )
 
-            // DB write succeeded
-            fileInfo = fileInfoResult.first
-            val createdAt = fileInfoResult.second
-            val price = calculatePriceInSatoshis(fileInfo.toQuoteRequest(expiresAfterSeconds))
-            val (invoice, _) = makeInvoice(
-                fileInfo,
-                price,
-                privateKey
-            )
+          finalizeStorage(uuid.toString(), createdAt)
 
-            finalizeStorage(uuid.toString(), createdAt)
-
-            call.respond(invoice)
-          }
+          call.respond(invoice)
         } else {
           call.respond(HttpStatusCode.BadRequest, Response(message = "Expected multipart form"))
         }

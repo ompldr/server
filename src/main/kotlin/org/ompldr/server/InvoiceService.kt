@@ -15,30 +15,23 @@
  */
 package org.ompldr.server
 
-import com.typesafe.config.ConfigFactory
 import io.ktor.application.Application
 import io.ktor.application.ApplicationStopping
 import io.ktor.application.call
 import io.ktor.application.install
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.apache.Apache
-import io.ktor.config.HoconApplicationConfig
 import io.ktor.features.CallLogging
 import io.ktor.features.DefaultHeaders
 import io.ktor.response.respondText
 import io.ktor.routing.Routing
 import io.ktor.routing.get
 import kotlinx.coroutines.experimental.launch
-import mu.KotlinLogging
 import org.ompldr.server.models.Db.initializeDbs
 import org.ompldr.server.models.LndRpcClient.checkIfInvoicesUnpaid
 import org.ompldr.server.models.LndRpcClient.subscribeToInvoices
 
 object InvoiceService {
-  internal val settings = HoconApplicationConfig(ConfigFactory.defaultApplication())
-
-  private val logger = KotlinLogging.logger {}
-
   object HTTP {
     val client = HttpClient(Apache)
   }
