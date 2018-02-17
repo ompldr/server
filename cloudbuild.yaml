@@ -1,7 +1,6 @@
 steps:
 - name: 'gcr.io/cloud-builders/docker'
   args: ["build", "-t", "us.gcr.io/ompldr/server:$REVISION_ID", "."]
-  dir: 'server'
 - name: 'gcr.io/cloud-builders/docker'
   args: ["tag", "us.gcr.io/ompldr/server:$REVISION_ID", "us.gcr.io/ompldr/server:latest"]
 - name: 'gcr.io/cloud-builders/docker'
