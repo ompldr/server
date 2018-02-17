@@ -26,6 +26,7 @@ import io.ktor.features.DefaultHeaders
 import io.ktor.response.respondText
 import io.ktor.routing.Routing
 import io.ktor.routing.get
+import kotlinx.coroutines.experimental.delay
 import kotlinx.coroutines.experimental.launch
 import mu.KotlinLogging
 import org.ompldr.server.models.Db.initializeDbs
@@ -59,7 +60,7 @@ object InvoiceService {
         launch {
           checkIfInvoicesUnpaid()
         }
-        Thread.sleep(5 * 60 * 1000)
+        delay(5 * 60 * 1000)
       }
     }
     launch {
