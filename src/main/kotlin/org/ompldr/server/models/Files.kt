@@ -16,7 +16,6 @@
 package org.ompldr.server.models
 
 import com.github.debop.kodatimes.seconds
-import org.jetbrains.exposed.dao.EntityID
 import org.jetbrains.exposed.dao.LongIdTable
 import org.jetbrains.exposed.sql.Query
 import org.jetbrains.exposed.sql.SchemaUtils.create
