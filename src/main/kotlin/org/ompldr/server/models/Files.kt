@@ -94,8 +94,8 @@ object Files {
     val refreshRequest = dbExecRead {
       RefreshRequestModel.select {
         RefreshRequestModel.rhash.eq(rhash)
-      }
-    }.firstOrNull()
+      }.firstOrNull()
+    }
     return if (refreshRequest != null) {
       dbExecWrite {
         val rows = RefreshRequestModel.update({

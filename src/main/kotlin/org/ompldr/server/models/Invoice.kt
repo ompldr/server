@@ -202,9 +202,9 @@ object LndRpcClient {
       val rHash = dbExecRead {
         InvoiceModel.select {
           InvoiceModel.memo.eq(fileId)
-        }
-      }.mapNotNull {
-        it[InvoiceModel.rhash]
+        }.mapNotNull {
+              it[InvoiceModel.rhash]
+            }
       }.firstOrNull()
       if (rHash != null) {
         logger.info {
