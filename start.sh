@@ -6,8 +6,8 @@ envsubst < /etc/ompldr-config/application.conf.in > application.conf
 cat application.conf
 
 exec java -server \
-  -Xms3g \
-  -Xmx3g \
+  -Xms2g \
+  -Xmx2g \
   -XX:+UseConcMarkSweepGC \
   -XX:+UseStringDeduplication \
   -XX:+UseCompressedOops \
