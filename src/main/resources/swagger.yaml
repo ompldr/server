@@ -19,8 +19,10 @@ info:
     The Omploader API is available for public use, and operates under an upfront
     payment model. Generally speaking, there are no limitations on use, however
     we retain the right to remove content which may be in violation of the
-    underlying host policies. All API endpoints are rate limited to 1 request
-    per second per IP address.
+    underlying host policies.
+
+    All API endpoints are rate limited and clients may be throttled as needed.
+    The API returns status code 429 in the event of too many requests.
   version: 2.0.0
   title: Omploader
   license:

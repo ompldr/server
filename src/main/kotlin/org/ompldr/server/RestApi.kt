@@ -35,6 +35,7 @@ import io.ktor.routing.Routing
 import mu.KotlinLogging
 import org.ompldr.server.apis.BremHSTS
 import org.ompldr.server.apis.BremHttpsRedirect
+import org.ompldr.server.apis.RateLimiter
 import org.ompldr.server.apis.defaultApi
 import org.ompldr.server.models.Db.initializeDbs
 
@@ -58,6 +59,13 @@ object RestApi {
     if (redirectToHttps) {
       logger.info {
         "installing https filters (redirect & HSTS)"
+      }
+      install(RateLimiter) {
+        this.burst = settings.propertyOrNull("ompldr.ratelimiter.burst")?.getString()?.toInt() ?: this.burst
+        this.period = settings.propertyOrNull("ompldr.ratelimiter.period")?.getString()?.toInt() ?: this.period
+        this.countLimit = settings.propertyOrNull("ompldr.ratelimiter.countLimit")?.getString()?.toInt() ?: this.countLimit
+        this.redisHost = settings.propertyOrNull("ompldr.ratelimiter.redis.host")?.getString() ?: this.redisHost
+        this.redisPort = settings.propertyOrNull("ompldr.ratelimiter.redis.port")?.getString()?.toInt() ?: this.redisPort
       }
       install(BremHttpsRedirect)
       install(BremHSTS, ApplicationHstsConfiguration())

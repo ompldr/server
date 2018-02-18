@@ -1,5 +1,6 @@
 package org.ompldr.server.models
 
+import mu.KotlinLogging
 import org.jetbrains.spek.api.Spek
 import org.jetbrains.spek.api.dsl.given
 import org.jetbrains.spek.api.dsl.it
@@ -9,6 +10,7 @@ import org.ompldr.server.models.Files.fileIdEncode
 import java.util.Random
 import kotlin.test.assertEquals
 
+private val logger = KotlinLogging.logger {}
 object FilesSpec : Spek({
   given("a fileId") {
     on("encode") {
