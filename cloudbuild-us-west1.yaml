@@ -1,8 +1,23 @@
 steps:
+- name: gcr.io/cloud-builders/gsutil
+  args: ['cp', 'gs://ompldr/gradle/cache.tgz', '.']
+- name: gcr.io/cloud-builders/gradle
+  env: ['GRADLE_USER_HOME=cache']
+  entrypoint: 'bash'
+  args: ['-c',
+    'tar xf cache.tgz && ./gradlew shadowJar && GZIP=-1 tar czf cache.tgz cache/'
+  ]
+- name: gcr.io/cloud-builders/gsutil
+  args: ['cp', 'cache.tgz', 'gs://ompldr/gradle/cache.tgz']
 - name: 'gcr.io/cloud-builders/docker'
-  args: ["build", "-t", "us.gcr.io/ompldr/server:$REVISION_ID", "."]
+  args: ['pull', 'us.gcr.io/ompldr/server:latest']
 - name: 'gcr.io/cloud-builders/docker'
-  args: ["tag", "us.gcr.io/ompldr/server:$REVISION_ID", "us.gcr.io/ompldr/server:latest"]
+  args: ["build",
+    "-t", "us.gcr.io/ompldr/server:$REVISION_ID",
+    "-t", "us.gcr.io/ompldr/server:latest",
+    "--cache-from", "us.gcr.io/ompldr/server:latest",
+    "-f", "Dockerfile.slim",
+    "."]
 - name: 'gcr.io/cloud-builders/docker'
   args: ["push", "us.gcr.io/ompldr/server:$REVISION_ID"]
 - name: 'gcr.io/cloud-builders/docker'

@@ -8,15 +8,7 @@ RUN apt-get update \
   && apt-get install -qq -y gettext \
   && rm -rf /var/lib/apt/lists/*
 
-COPY . /build
-RUN cd /build \
-  && ./gradlew shadowJar \
-  && mkdir -p /opt/ompldr \
-  && cp ./build/libs/ompldr-server.jar /opt/ompldr/ \
-  && cp build/libs/ompldr-server.jar /ompldr \
-  && rm -rf $HOME/.gradle \
-  && rm -rf /build
-
+COPY ./build/libs/ompldr-server.jar /opt/ompldr/
 COPY start.sh /opt/ompldr/start.sh
 
 CMD ["/opt/ompldr/start.sh"]
