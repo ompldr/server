@@ -81,131 +81,36 @@ fun Route.defaultApi() {
     call.respondText { "pong\n" }
   }
 
-  get { _: Paths.swaggerJsonGet ->
-    call.response.cacheControl(CacheControl.MaxAge(24 * 3600 * 7))
-    call.respond(call.resolveResource("swagger.json")!!)
-  }
-
   get { _: Paths.swaggerYamlGet ->
     call.response.cacheControl(CacheControl.MaxAge(24 * 3600 * 7))
     call.respond(call.resolveResource("swagger.yaml")!!)
   }
 
-  get { it: Paths.getEncryptedFile ->
-    try {
-      val result = getFileInfo(it.id, requireInvoicePaid = true)
-      if (result != null) {
-        call.response.cacheControl(CacheControl.MaxAge(24 * 3600))
-        call.respond(object : OutgoingContent.WriteChannelContent() {
-          override val contentType: ContentType?
-            get() = ContentType.parse(result.fileInfo.contentType)
-
-          suspend override fun writeTo(channel: ByteWriteChannel) {
-            downloadFromBlobStorageEncrypted(
-                result.uuid.toString(),
-                result.createdAt,
-                channel)
-            channel.flush()
-            channel.close()
-          }
-        })
-        launch {
-          decrementDownloads(it.id)
-        }
-      } else {
-        call.respond(HttpStatusCode.NotFound, Response("Not found ¯\\_(ツ)_/¯"))
-      }
-    } catch (e: java.lang.IllegalArgumentException) {
-      call.respond(HttpStatusCode.NotFound, Response("Not found ¯\\_(ツ)_/¯"))
-    } catch (e: java.security.GeneralSecurityException) {
-      call.respond(HttpStatusCode.NotFound, Response("Not found ¯\\_(ツ)_/¯"))
-    } catch (e: Exception) {
-      logger.error("Caught exception", e)
-      call.respond(HttpStatusCode.InternalServerError, Response("Exception caught D:"))
-    }
-  }
-
-  get { it: Paths.getFile ->
-    try {
-      val result = getFileInfo(it.id, requireInvoicePaid = true)
-      if (result != null) {
-        call.response.cacheControl(CacheControl.MaxAge(24 * 3600))
-        call.respond(object : OutgoingContent.WriteChannelContent() {
-          override val contentType: ContentType?
-            get() = ContentType.parse(result.fileInfo.contentType)
-
-          suspend override fun writeTo(channel: ByteWriteChannel) {
-            downloadFromBlobStorage(
-                result.uuid.toString(),
-                result.createdAt,
-                it.privateKey,
-                channel)
-            channel.flush()
-            channel.close()
-          }
-        })
-        launch {
-          decrementDownloads(it.id)
-        }
-      } else {
-        call.respond(HttpStatusCode.NotFound, Response("Not found ¯\\_(ツ)_/¯"))
-      }
-    } catch (e: java.lang.IllegalArgumentException) {
-      call.respond(HttpStatusCode.NotFound, Response("Not found ¯\\_(ツ)_/¯"))
-    } catch (e: java.security.GeneralSecurityException) {
-      call.respond(HttpStatusCode.NotFound, Response("Not found ¯\\_(ツ)_/¯"))
-    } catch (e: Exception) {
-      logger.error("Caught exception", e)
-      call.respond(HttpStatusCode.InternalServerError, Response("Exception caught D:"))
-    }
-  }
-
-  get { it: Paths.getInfo ->
-    try {
-      val result = getFileInfo(it.id)
-      if (result != null) {
-        val (info, _) = result
-        call.response.cacheControl(CacheControl.MaxAge(1))
-        call.respond(info)
-      } else {
-        call.respond(HttpStatusCode.NotFound, Response("Not found ¯\\_(ツ)_/¯"))
-      }
-    } catch (e: java.lang.IllegalArgumentException) {
-      call.respond(HttpStatusCode.NotFound, Response("Not found ¯\\_(ツ)_/¯"))
-    } catch (e: java.security.GeneralSecurityException) {
-      call.respond(HttpStatusCode.NotFound, Response("Not found ¯\\_(ツ)_/¯"))
-    } catch (e: Exception) {
-      logger.error("Caught exception", e)
-      call.respond(HttpStatusCode.InternalServerError, Response("Exception caught D:"))
-    }
-  }
-
-  route("/refresh/{id}") {
-    put {
+  route("/v2") {
+    get { it: Paths.getEncryptedFile ->
       try {
-        val refreshRequest = call.receive<RefreshRequest>()
-        val id = call.parameters["id"] ?: ""
-        val result = getFileInfo(id)
+        val result = getFileInfo(it.id, requireInvoicePaid = true)
         if (result != null) {
-          val price = calculatePriceInSatoshis(
-              refreshRequest.toQuoteRequest(result.fileInfo.length)
-          )
-          val (invoice, rhash) = makeInvoice(
-              result.fileInfo,
-              price
-          )
-          if (addRefreshRequest(result.fileInfo, refreshRequest, rhash) != null) {
-            call.respond(invoice)
-          } else {
-            call.respond(HttpStatusCode.InternalServerError, Response("Couldn't write request into the DB :("))
+          call.response.cacheControl(CacheControl.MaxAge(24 * 3600))
+          call.respond(object : OutgoingContent.WriteChannelContent() {
+            override val contentType: ContentType?
+              get() = ContentType.parse(result.fileInfo.contentType)
+
+            suspend override fun writeTo(channel: ByteWriteChannel) {
+              downloadFromBlobStorageEncrypted(
+                  result.uuid.toString(),
+                  result.createdAt,
+                  channel)
+              channel.flush()
+              channel.close()
+            }
+          })
+          launch {
+            decrementDownloads(it.id)
           }
         } else {
           call.respond(HttpStatusCode.NotFound, Response("Not found ¯\\_(ツ)_/¯"))
         }
-      } catch (e: MismatchedInputException) {
-        call.respond(HttpStatusCode.BadRequest, Response("That doesn't look right to me."))
-      } catch (e: UnsupportedMediaTypeException) {
-        call.respond(HttpStatusCode.BadRequest, Response("That doesn't look right to me."))
       } catch (e: java.lang.IllegalArgumentException) {
         call.respond(HttpStatusCode.NotFound, Response("Not found ¯\\_(ツ)_/¯"))
       } catch (e: java.security.GeneralSecurityException) {
@@ -215,95 +120,32 @@ fun Route.defaultApi() {
         call.respond(HttpStatusCode.InternalServerError, Response("Exception caught D:"))
       }
     }
-  }
 
-  route("/upload") {
-    post {
+    get { it: Paths.getFile ->
       try {
-        if (call.request.isMultipart()) {
-          val randomInstance = SecureRandom.getInstance("NativePRNGNonBlocking")
-          val randomBytes = ByteArray(18)
-          randomInstance.nextBytes(randomBytes)
+        val result = getFileInfo(it.id, requireInvoicePaid = true)
+        if (result != null) {
+          call.response.cacheControl(CacheControl.MaxAge(24 * 3600))
+          call.respond(object : OutgoingContent.WriteChannelContent() {
+            override val contentType: ContentType?
+              get() = ContentType.parse(result.fileInfo.contentType)
 
-          var fileInfo = FileInfo()
-          var expiresAfterSeconds = 3600L
-          var extension = ""
-
-          val currentDate = DateTime.now(DateTimeZone.UTC)
-          val b64 = Base64.getUrlEncoder().withoutPadding()
-          val privateKey = b64.encodeToString(randomBytes)
-          val uuid = UUID.randomUUID()
-
-          val multipart = call.receiveMultipart()
-
-          multipart.forEachPart {
-            if (it is PartData.FormItem) {
-              when (it.partName) {
-                "downloadCount" -> {
-                  val downloadsRemaining = it.value.toLong()
-                  fileInfo = fileInfo.copy(downloadsRemaining = downloadsRemaining)
-                }
-                "expiresAfterSeconds" -> {
-                  expiresAfterSeconds = Math.max(it.value.toLong(), expiresAfterSeconds)
-                }
-              }
-            } else if (it is PartData.FileItem && it.partName == "file" && fileInfo.length == 0L) {
-              extension = File(it.originalFileName).extension
-              if (it.contentType != null) {
-                fileInfo = fileInfo.copy(contentType = it.contentType.toString())
-              }
-              fileInfo = fileInfo.copy(length = uploadToTemporaryBlobStorage(
-                  uuid.toString(),
-                  privateKey,
-                  it.streamProvider())
-              )
+            suspend override fun writeTo(channel: ByteWriteChannel) {
+              downloadFromBlobStorage(
+                  result.uuid.toString(),
+                  result.createdAt,
+                  it.privateKey,
+                  channel)
+              channel.flush()
+              channel.close()
             }
-            it.dispose()
+          })
+          launch {
+            decrementDownloads(it.id)
           }
-          val expiresAt = (currentDate + expiresAfterSeconds.seconds()).toISOFormat()
-
-          // Write record in DB
-          val fileInfoResult = addFileEntry(
-              fileInfo.copy(expiresAt = expiresAt),
-              uuid,
-              extension)
-
-          // DB write succeeded
-          fileInfo = fileInfoResult.first
-          val createdAt = fileInfoResult.second
-          val price = calculatePriceInSatoshis(fileInfo.toQuoteRequest(expiresAfterSeconds))
-          val (invoice, _) = makeInvoice(
-              fileInfo,
-              price,
-              privateKey
-          )
-
-          finalizeStorage(uuid.toString(), createdAt)
-
-          call.respond(invoice)
         } else {
-          call.respond(HttpStatusCode.BadRequest, Response(message = "Expected multipart form"))
+          call.respond(HttpStatusCode.NotFound, Response("Not found ¯\\_(ツ)_/¯"))
         }
-      } catch (e: Exception) {
-        logger.error("Caught exception", e)
-        call.respond(HttpStatusCode.InternalServerError, Response(message = "Unknown error :("))
-      }
-    }
-  }
-
-  route("/quote") {
-    post {
-      try {
-        val quoteRequest = call.receive<QuoteRequest>()
-        call.respond(Quote(
-            quoteRequest = quoteRequest,
-            satoshis = calculatePriceInSatoshis(quoteRequest),
-            usd = calculatePriceInUSD(quoteRequest).toDouble()
-        ))
-      } catch (e: MismatchedInputException) {
-        call.respond(HttpStatusCode.BadRequest, Response("That doesn't look right to me."))
-      } catch (e: UnsupportedMediaTypeException) {
-        call.respond(HttpStatusCode.BadRequest, Response("That doesn't look right to me."))
       } catch (e: java.lang.IllegalArgumentException) {
         call.respond(HttpStatusCode.NotFound, Response("Not found ¯\\_(ツ)_/¯"))
       } catch (e: java.security.GeneralSecurityException) {
@@ -311,6 +153,161 @@ fun Route.defaultApi() {
       } catch (e: Exception) {
         logger.error("Caught exception", e)
         call.respond(HttpStatusCode.InternalServerError, Response("Exception caught D:"))
+      }
+    }
+
+    get { it: Paths.getInfo ->
+      try {
+        val result = getFileInfo(it.id)
+        if (result != null) {
+          val (info, _) = result
+          call.response.cacheControl(CacheControl.MaxAge(1))
+          call.respond(info)
+        } else {
+          call.respond(HttpStatusCode.NotFound, Response("Not found ¯\\_(ツ)_/¯"))
+        }
+      } catch (e: java.lang.IllegalArgumentException) {
+        call.respond(HttpStatusCode.NotFound, Response("Not found ¯\\_(ツ)_/¯"))
+      } catch (e: java.security.GeneralSecurityException) {
+        call.respond(HttpStatusCode.NotFound, Response("Not found ¯\\_(ツ)_/¯"))
+      } catch (e: Exception) {
+        logger.error("Caught exception", e)
+        call.respond(HttpStatusCode.InternalServerError, Response("Exception caught D:"))
+      }
+    }
+
+    route("/refresh/{id}") {
+      put {
+        try {
+          val refreshRequest = call.receive<RefreshRequest>()
+          val id = call.parameters["id"] ?: ""
+          val result = getFileInfo(id)
+          if (result != null) {
+            val price = calculatePriceInSatoshis(
+                refreshRequest.toQuoteRequest(result.fileInfo.length)
+            )
+            val (invoice, rhash) = makeInvoice(
+                result.fileInfo,
+                price
+            )
+            if (addRefreshRequest(result.fileInfo, refreshRequest, rhash) != null) {
+              call.respond(invoice)
+            } else {
+              call.respond(HttpStatusCode.InternalServerError, Response("Couldn't write request into the DB :("))
+            }
+          } else {
+            call.respond(HttpStatusCode.NotFound, Response("Not found ¯\\_(ツ)_/¯"))
+          }
+        } catch (e: MismatchedInputException) {
+          call.respond(HttpStatusCode.BadRequest, Response("That doesn't look right to me."))
+        } catch (e: UnsupportedMediaTypeException) {
+          call.respond(HttpStatusCode.BadRequest, Response("That doesn't look right to me."))
+        } catch (e: java.lang.IllegalArgumentException) {
+          call.respond(HttpStatusCode.NotFound, Response("Not found ¯\\_(ツ)_/¯"))
+        } catch (e: java.security.GeneralSecurityException) {
+          call.respond(HttpStatusCode.NotFound, Response("Not found ¯\\_(ツ)_/¯"))
+        } catch (e: Exception) {
+          logger.error("Caught exception", e)
+          call.respond(HttpStatusCode.InternalServerError, Response("Exception caught D:"))
+        }
+      }
+    }
+
+    route("/upload") {
+      post {
+        try {
+          if (call.request.isMultipart()) {
+            val randomInstance = SecureRandom.getInstance("NativePRNGNonBlocking")
+            val randomBytes = ByteArray(18)
+            randomInstance.nextBytes(randomBytes)
+
+            var fileInfo = FileInfo()
+            var expiresAfterSeconds = 3600L
+            var extension = ""
+
+            val currentDate = DateTime.now(DateTimeZone.UTC)
+            val b64 = Base64.getUrlEncoder().withoutPadding()
+            val privateKey = b64.encodeToString(randomBytes)
+            val uuid = UUID.randomUUID()
+
+            val multipart = call.receiveMultipart()
+
+            multipart.forEachPart {
+              if (it is PartData.FormItem) {
+                when (it.partName) {
+                  "downloadCount" -> {
+                    val downloadsRemaining = it.value.toLong()
+                    fileInfo = fileInfo.copy(downloadsRemaining = downloadsRemaining)
+                  }
+                  "expiresAfterSeconds" -> {
+                    expiresAfterSeconds = Math.max(it.value.toLong(), expiresAfterSeconds)
+                  }
+                }
+              } else if (it is PartData.FileItem && it.partName == "file" && fileInfo.length == 0L) {
+                extension = File(it.originalFileName).extension
+                if (it.contentType != null) {
+                  fileInfo = fileInfo.copy(contentType = it.contentType.toString())
+                }
+                fileInfo = fileInfo.copy(length = uploadToTemporaryBlobStorage(
+                    uuid.toString(),
+                    privateKey,
+                    it.streamProvider())
+                )
+              }
+              it.dispose()
+            }
+            val expiresAt = (currentDate + expiresAfterSeconds.seconds()).toISOFormat()
+
+            // Write record in DB
+            val fileInfoResult = addFileEntry(
+                fileInfo.copy(expiresAt = expiresAt),
+                uuid,
+                extension)
+
+            // DB write succeeded
+            fileInfo = fileInfoResult.first
+            val createdAt = fileInfoResult.second
+            val price = calculatePriceInSatoshis(fileInfo.toQuoteRequest(expiresAfterSeconds))
+            val (invoice, _) = makeInvoice(
+                fileInfo,
+                price,
+                privateKey
+            )
+
+            finalizeStorage(uuid.toString(), createdAt)
+
+            call.respond(invoice)
+          } else {
+            call.respond(HttpStatusCode.BadRequest, Response(message = "Expected multipart form"))
+          }
+        } catch (e: Exception) {
+          logger.error("Caught exception", e)
+          call.respond(HttpStatusCode.InternalServerError, Response(message = "Unknown error :("))
+        }
+      }
+    }
+
+    route("/quote") {
+      post {
+        try {
+          val quoteRequest = call.receive<QuoteRequest>()
+          call.respond(Quote(
+              quoteRequest = quoteRequest,
+              satoshis = calculatePriceInSatoshis(quoteRequest),
+              usd = calculatePriceInUSD(quoteRequest).toDouble()
+          ))
+        } catch (e: MismatchedInputException) {
+          call.respond(HttpStatusCode.BadRequest, Response("That doesn't look right to me."))
+        } catch (e: UnsupportedMediaTypeException) {
+          call.respond(HttpStatusCode.BadRequest, Response("That doesn't look right to me."))
+        } catch (e: java.lang.IllegalArgumentException) {
+          call.respond(HttpStatusCode.NotFound, Response("Not found ¯\\_(ツ)_/¯"))
+        } catch (e: java.security.GeneralSecurityException) {
+          call.respond(HttpStatusCode.NotFound, Response("Not found ¯\\_(ツ)_/¯"))
+        } catch (e: Exception) {
+          logger.error("Caught exception", e)
+          call.respond(HttpStatusCode.InternalServerError, Response("Exception caught D:"))
+        }
       }
     }
   }

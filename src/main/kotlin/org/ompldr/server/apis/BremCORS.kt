@@ -15,7 +15,6 @@
  */
 package org.ompldr.server.apis
 
-import io.ktor.application.ApplicationCall
 import io.ktor.application.ApplicationCallPipeline
 import io.ktor.application.ApplicationFeature
 import io.ktor.application.call
