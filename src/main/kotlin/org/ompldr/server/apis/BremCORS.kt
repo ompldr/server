@@ -20,22 +20,28 @@ import io.ktor.application.ApplicationCallPipeline
 import io.ktor.application.ApplicationFeature
 import io.ktor.application.call
 import io.ktor.http.HttpHeaders
+import io.ktor.http.HttpMethod
+import io.ktor.request.httpMethod
 import io.ktor.response.header
+import io.ktor.response.respond
 import io.ktor.util.AttributeKey
 
-class BremCORS(config: Configuration) {
+class BremCORS {
   class Configuration
-  fun intercept(call: ApplicationCall) {
-    call.response.header(HttpHeaders.AccessControlAllowOrigin, "*")
-    call.response.header(HttpHeaders.AccessControlAllowHeaders, "*")
-    call.response.header(HttpHeaders.AccessControlAllowMethods, "*")
-  }
 
   companion object Feature : ApplicationFeature<ApplicationCallPipeline, Configuration, BremCORS> {
     override val key = AttributeKey<BremCORS>("BremCORS")
     override fun install(pipeline: ApplicationCallPipeline, configure: Configuration.() -> Unit): BremCORS {
-      val feature = BremCORS(Configuration().apply(configure))
-      pipeline.intercept(ApplicationCallPipeline.Infrastructure) { feature.intercept(call) }
+      val feature = BremCORS()
+      pipeline.intercept(ApplicationCallPipeline.Infrastructure) {
+        call.response.header(HttpHeaders.AccessControlAllowOrigin, "*")
+        call.response.header(HttpHeaders.AccessControlAllowHeaders, "Content-Type")
+        call.response.header(HttpHeaders.AccessControlAllowMethods, "GET, HEAD, POST, PUT, OPTIONS")
+        if (call.request.httpMethod == HttpMethod.Options) {
+          call.respond("ok bro")
+          finish()
+        }
+      }
       return feature
     }
   }
