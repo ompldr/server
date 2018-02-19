@@ -65,6 +65,8 @@ steps:
   - rollout
   - status
   - deployment/invoice-service
+
+# Clear old kubectl creds
 - name: 'gcr.io/cloud-builders/kubectl'
   entrypoint: 'bash'
   args: ['-c',
