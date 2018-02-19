@@ -33,6 +33,7 @@ import io.ktor.locations.Locations
 import io.ktor.metrics.Metrics
 import io.ktor.routing.Routing
 import mu.KotlinLogging
+import org.ompldr.server.apis.BremCORS
 import org.ompldr.server.apis.BremHSTS
 import org.ompldr.server.apis.BremHttpsRedirect
 import org.ompldr.server.apis.RateLimiter
@@ -68,6 +69,7 @@ object RestApi {
         this.redisPort = settings.propertyOrNull("ompldr.ratelimiter.redis.port")?.getString()?.toInt() ?: this.redisPort
       }
       install(BremHttpsRedirect)
+      install(BremCORS)
       install(BremHSTS, ApplicationHstsConfiguration())
     }
     install(CallLogging)

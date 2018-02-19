@@ -22,6 +22,56 @@ steps:
   args: ["push", "us.gcr.io/ompldr/server:$REVISION_ID"]
 - name: 'gcr.io/cloud-builders/docker'
   args: ["push", "us.gcr.io/ompldr/server:latest"]
+
+# Start deployment in us-east4
+- name: 'gcr.io/cloud-builders/kubectl'
+  args:
+  - set
+  - image
+  - deployment
+  - api-server
+  - server=us.gcr.io/ompldr/server:$REVISION_ID
+  env:
+  - 'CLOUDSDK_COMPUTE_ZONE=us-east4-a'
+  - 'CLOUDSDK_CONTAINER_CLUSTER=ompldr-us-east4'
+- name: 'gcr.io/cloud-builders/kubectl'
+  args:
+  - set
+  - image
+  - deployment
+  - periodic-service
+  - server=us.gcr.io/ompldr/server:$REVISION_ID
+- name: 'gcr.io/cloud-builders/kubectl'
+  args:
+  - set
+  - image
+  - deployment
+  - invoice-service
+  - server=us.gcr.io/ompldr/server:$REVISION_ID
+
+# Wait for previous deployments to complete
+- name: 'gcr.io/cloud-builders/kubectl'
+  args:
+  - rollout
+  - status
+  - deployment/api-server
+- name: 'gcr.io/cloud-builders/kubectl'
+  args:
+  - rollout
+  - status
+  - deployment/periodic-service
+- name: 'gcr.io/cloud-builders/kubectl'
+  args:
+  - rollout
+  - status
+  - deployment/invoice-service
+- name: 'gcr.io/cloud-builders/kubectl'
+  entrypoint: 'bash'
+  args: ['-c',
+    'rm -rf ~/.kube'
+  ]
+
+# Start deployment in us-west1
 - name: 'gcr.io/cloud-builders/kubectl'
   args:
   - set

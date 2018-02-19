@@ -171,12 +171,6 @@ fun deleteBlob(blobId: String, createdAt: DateTime) {
   }
 }
 
-fun deleteTempBlob(blobId: String) {
-  gceStorage.delete(
-      makeTempBlobId(blobId, currentStorageRegion)
-  )
-}
-
 private val pricePerByteOfStoragePerSecond =
     BigDecimal("0.05") // price per GB in USD
         .divide(BigDecimal(2.0.pow(30))) // convert to bytes

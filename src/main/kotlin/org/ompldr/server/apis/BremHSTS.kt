@@ -60,6 +60,7 @@ class BremHSTS(config: Configuration) {
 
   fun intercept(call: ApplicationCall) {
     call.response.header(HttpHeaders.StrictTransportSecurity, headerValue)
+    call.response.header(HttpHeaders.AccessControlAllowOrigin, "*")
   }
 
   companion object Feature : ApplicationFeature<ApplicationCallPipeline, Configuration, BremHSTS> {
