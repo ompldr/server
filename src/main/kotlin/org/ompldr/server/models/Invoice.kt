@@ -26,6 +26,8 @@ import io.grpc.netty.GrpcSslContexts
 import io.grpc.netty.NegotiationType
 import io.grpc.netty.NettyChannelBuilder
 import io.netty.handler.ssl.SslContext
+import kotlinx.coroutines.experimental.delay
+import kotlinx.coroutines.experimental.time.delay
 import lnrpc.LightningGrpc
 import lnrpc.Rpc
 import mu.KotlinLogging
@@ -45,6 +47,7 @@ import org.ompldr.server.utils.toISOFormat
 import java.io.File
 import java.nio.file.Files
 import java.nio.file.Paths
+import java.time.Duration
 import java.util.concurrent.Executor
 
 /**
@@ -178,7 +181,7 @@ object LndRpcClient {
     }
   }
 
-  fun subscribeToInvoices() {
+  suspend fun subscribeToInvoices() {
     while (true) {
       logger.info("Starting new invoice subscription")
       val subscription = stub.subscribeInvoices(
@@ -194,6 +197,7 @@ object LndRpcClient {
         }
       } catch (e: Exception) {
         logger.error("Caught except in subscription loop", e)
+        delay(Duration.ofMillis(100))
       }
     }
   }
