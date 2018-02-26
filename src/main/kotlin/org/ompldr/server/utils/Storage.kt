@@ -181,7 +181,7 @@ private val pricePerByteofTransfer =
 
 fun calculatePriceInUSD(quoteRequest: QuoteRequest): BigDecimal {
   val totalBytesToServe = BigDecimal(quoteRequest.length * quoteRequest.downloadCount)
-  return BigDecimal(0.1) // minimum price, $0.10
+  return BigDecimal(0.25) // minimum price, $0.25
       .plus(pricePerByteOfStoragePerSecond
           .multiply(
               totalBytesToServe.multiply(BigDecimal(quoteRequest.expiresAfterSeconds))))
