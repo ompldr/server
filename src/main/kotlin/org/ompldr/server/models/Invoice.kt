@@ -26,7 +26,6 @@ import io.grpc.netty.GrpcSslContexts
 import io.grpc.netty.NegotiationType
 import io.grpc.netty.NettyChannelBuilder
 import io.netty.handler.ssl.SslContext
-import kotlinx.coroutines.experimental.delay
 import kotlinx.coroutines.experimental.time.delay
 import lnrpc.LightningGrpc
 import lnrpc.Rpc
